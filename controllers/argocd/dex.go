@@ -247,12 +247,15 @@ func (r *ReconcileArgoCD) reconcileDexDeployment(cr *argoprojv1a1.ArgoCD) error 
 			{
 				ContainerPort: common.ArgoCDDefaultDexHTTPPort,
 				Name:          "http",
+				Protocol:      corev1.ProtocolTCP,
 			}, {
 				ContainerPort: common.ArgoCDDefaultDexGRPCPort,
 				Name:          "grpc",
+				Protocol:      corev1.ProtocolTCP,
 			}, {
 				ContainerPort: common.ArgoCDDefaultDexMetricsPort,
 				Name:          "metrics",
+				Protocol:      corev1.ProtocolTCP,
 			},
 		},
 		Resources: getDexResources(cr),

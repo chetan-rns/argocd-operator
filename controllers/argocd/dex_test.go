@@ -400,10 +400,12 @@ func TestReconcileArgoCD_reconcileDexDeployment(t *testing.T) {
 					{
 						Name:          "http",
 						ContainerPort: 5556,
+						Protocol:      corev1.ProtocolTCP,
 					},
 					{
 						Name:          "grpc",
 						ContainerPort: 5557,
+						Protocol:      corev1.ProtocolTCP,
 					},
 					{
 						Name:          "metrics",
@@ -491,14 +493,17 @@ func TestReconcileArgoCD_reconcileDexDeployment_withUpdate(t *testing.T) {
 					{
 						Name:          "http",
 						ContainerPort: 5556,
+						Protocol:      corev1.ProtocolTCP,
 					},
 					{
 						Name:          "grpc",
 						ContainerPort: 5557,
+						Protocol:      corev1.ProtocolTCP,
 					},
 					{
 						Name:          "metrics",
 						ContainerPort: 5558,
+						Protocol:      corev1.ProtocolTCP,
 					},
 				},
 				SecurityContext: &corev1.SecurityContext{

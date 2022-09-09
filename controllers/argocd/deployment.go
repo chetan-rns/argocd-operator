@@ -336,6 +336,9 @@ func getDexServerAddress(cr *argoprojv1a1.ArgoCD) string {
 
 // getRepoServerAddress will return the Argo CD repo server address.
 func getRepoServerAddress(cr *argoprojv1a1.ArgoCD) string {
+	if os.Getenv("DISABLE_FULLY_QUALIFIED_SERVICE") == "true" {
+		return fmt.Sprintf("%s:%d", nameWithSuffix("repo-server", cr), common.ArgoCDDefaultRepoServerPort)
+	}
 	return fqdnServiceRef("repo-server", common.ArgoCDDefaultRepoServerPort, cr)
 }
 
@@ -434,6 +437,7 @@ func (r *ReconcileArgoCD) reconcileGrafanaDeployment(cr *argoprojv1a1.ArgoCD) er
 		Ports: []corev1.ContainerPort{
 			{
 				ContainerPort: 3000,
+				Protocol:      corev1.ProtocolTCP,
 			},
 		},
 		Env:       proxyEnvVars(),
@@ -568,11 +572,21 @@ func (r *ReconcileArgoCD) reconcileRedisDeployment(cr *argoprojv1a1.ArgoCD, useT
 		Ports: []corev1.ContainerPort{
 			{
 				ContainerPort: common.ArgoCDDefaultRedisPort,
+				Protocol:      corev1.ProtocolTCP,
 			},
 		},
 		Resources: getRedisResources(cr),
 		Env:       proxyEnvVars(),
-		SecurityContext: &corev1.SecurityContext{
+		VolumeMounts: []corev1.VolumeMount{
+			{
+				Name:      common.ArgoCDRedisServerTLSSecretName,
+				MountPath: "/app/config/redis/tls",
+			},
+		},
+	}}
+
+	if os.Getenv("DISABLE_REDIS_SCC") != "true" {
+		deploy.Spec.Template.Spec.Containers[0].SecurityContext = &corev1.SecurityContext{
 			AllowPrivilegeEscalation: boolPtr(false),
 			Capabilities: &corev1.Capabilities{
 				Drop: []corev1.Capability{
@@ -581,14 +595,10 @@ func (r *ReconcileArgoCD) reconcileRedisDeployment(cr *argoprojv1a1.ArgoCD, useT
 			},
 			RunAsNonRoot: boolPtr(true),
 			RunAsUser:    int64Ptr(999),
-		},
-		VolumeMounts: []corev1.VolumeMount{
-			{
-				Name:      common.ArgoCDRedisServerTLSSecretName,
-				MountPath: "/app/config/redis/tls",
-			},
-		},
-	}}
+		}
+	}
+
+	deploy.Spec.Template.Spec.Containers[0].VolumeMounts = append(deploy.Spec.Template.Spec.Containers[0].VolumeMounts, cr.Spec.Redis.VolumeMounts...)
 
 	deploy.Spec.Template.Spec.ServiceAccountName = fmt.Sprintf("%s-%s", cr.Name, "argocd-redis")
 	deploy.Spec.Template.Spec.Volumes = []corev1.Volume{
@@ -603,6 +613,9 @@ func (r *ReconcileArgoCD) reconcileRedisDeployment(cr *argoprojv1a1.ArgoCD, useT
 		},
 	}
 
+	deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, cr.Spec.Redis.Volumes...)
+
+	deploy.Spec.Template.Spec.Containers[0].Env = append(deploy.Spec.Template.Spec.Containers[0].Env, cr.Spec.Redis.Env...)
 	if err := applyReconcilerHook(cr, deploy, ""); err != nil {
 		return err
 	}
@@ -631,6 +644,24 @@ func (r *ReconcileArgoCD) reconcileRedisDeployment(cr *argoprojv1a1.ArgoCD, useT
 		if !reflect.DeepEqual(existing.Spec.Template.Spec.Containers[0].Env,
 			deploy.Spec.Template.Spec.Containers[0].Env) {
 			existing.Spec.Template.Spec.Containers[0].Env = deploy.Spec.Template.Spec.Containers[0].Env
+			changed = true
+		}
+
+		if !reflect.DeepEqual(existing.Spec.Template.Spec.Containers[0].VolumeMounts,
+			deploy.Spec.Template.Spec.Containers[0].VolumeMounts) {
+			existing.Spec.Template.Spec.Containers[0].VolumeMounts = deploy.Spec.Template.Spec.Containers[0].VolumeMounts
+			changed = true
+		}
+
+		if !reflect.DeepEqual(existing.Spec.Template.Spec.Volumes,
+			deploy.Spec.Template.Spec.Volumes) {
+			existing.Spec.Template.Spec.Volumes = deploy.Spec.Template.Spec.Volumes
+			changed = true
+		}
+
+		if !reflect.DeepEqual(existing.Spec.Template.Spec.Containers[0].SecurityContext,
+			deploy.Spec.Template.Spec.Containers[0].SecurityContext) {
+			existing.Spec.Template.Spec.Containers[0].SecurityContext = deploy.Spec.Template.Spec.Containers[0].SecurityContext
 			changed = true
 		}
 
@@ -731,6 +762,7 @@ func (r *ReconcileArgoCD) reconcileRedisHAProxyDeployment(cr *argoprojv1a1.ArgoC
 			{
 				ContainerPort: common.ArgoCDDefaultRedisPort,
 				Name:          "redis",
+				Protocol:      corev1.ProtocolTCP,
 			},
 		},
 		Resources: getRedisHAProxyResources(cr),
@@ -959,9 +991,11 @@ func (r *ReconcileArgoCD) reconcileRepoDeployment(cr *argoprojv1a1.ArgoCD, useTL
 			{
 				ContainerPort: common.ArgoCDDefaultRepoServerPort,
 				Name:          "server",
+				Protocol:      corev1.ProtocolTCP,
 			}, {
 				ContainerPort: common.ArgoCDDefaultRepoMetricsPort,
 				Name:          "metrics",
+				Protocol:      corev1.ProtocolTCP,
 			},
 		},
 		ReadinessProbe: &corev1.Probe{
@@ -1176,8 +1210,10 @@ func (r *ReconcileArgoCD) reconcileServerDeployment(cr *argoprojv1a1.ArgoCD, use
 		Ports: []corev1.ContainerPort{
 			{
 				ContainerPort: 8080,
+				Protocol:      corev1.ProtocolTCP,
 			}, {
 				ContainerPort: 8083,
+				Protocol:      corev1.ProtocolTCP,
 			},
 		},
 		ReadinessProbe: &corev1.Probe{
@@ -1218,6 +1254,9 @@ func (r *ReconcileArgoCD) reconcileServerDeployment(cr *argoprojv1a1.ArgoCD, use
 			},
 		},
 	}}
+
+	deploy.Spec.Template.Spec.Containers[0].VolumeMounts = append(deploy.Spec.Template.Spec.Containers[0].VolumeMounts, cr.Spec.Server.VolumeMounts...)
+
 	deploy.Spec.Template.Spec.ServiceAccountName = fmt.Sprintf("%s-%s", cr.Name, "argocd-server")
 	deploy.Spec.Template.Spec.Volumes = []corev1.Volume{
 		{
@@ -1259,6 +1298,8 @@ func (r *ReconcileArgoCD) reconcileServerDeployment(cr *argoprojv1a1.ArgoCD, use
 			},
 		},
 	}
+
+	deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, cr.Spec.Server.Volumes...)
 
 	if replicas := getArgoCDServerReplicas(cr); replicas != nil {
 		deploy.Spec.Replicas = replicas

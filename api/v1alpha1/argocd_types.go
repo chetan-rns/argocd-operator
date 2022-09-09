@@ -105,6 +105,12 @@ type ArgoCDApplicationControllerSpec struct {
 
 	// Env lets you specify environment for application controller pods
 	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// Volumes adds volumes to the Application Controller statefulset
+	Volumes []corev1.Volume `json:"volumes,omitempty"`
+
+	// VolumeMounts adds volumeMounts to the Application Controller statefulset
+	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
 }
 
 // ArgoCDApplicationControllerShardSpec defines the options available for enabling sharding for the Application Controller component.
@@ -372,6 +378,15 @@ type ArgoCDRedisSpec struct {
 	// The value specified here can currently be:
 	// - openshift - Use the OpenShift service CA to request TLS config
 	AutoTLS string `json:"autotls,omitempty"`
+
+	// Volumes adds volumes to the Argo CD redis deployment
+	Volumes []corev1.Volume `json:"volumes,omitempty"`
+
+	// VolumeMounts adds volumeMounts to the Argo CD redis container
+	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
+
+	// Env lets you specify environment for the redis server
+	Env []corev1.EnvVar `json:"env,omitempty"`
 }
 
 // ArgoCDRepoSpec defines the desired state for the Argo CD repo server component.
@@ -517,6 +532,12 @@ type ArgoCDServerSpec struct {
 	// ExtraCommandArgs will not be added, if one of these commands is already part of the server command
 	// with same or different value.
 	ExtraCommandArgs []string `json:"extraCommandArgs,omitempty"`
+
+	// Volumes adds volumes to the Argo CD server deployment
+	Volumes []corev1.Volume `json:"volumes,omitempty"`
+
+	// VolumeMounts adds volumeMounts to the Argo CD server container
+	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
 }
 
 // ArgoCDServerServiceSpec defines the Service options for Argo CD Server component.

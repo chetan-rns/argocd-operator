@@ -184,6 +184,7 @@ func (r *ReconcileArgoCD) reconcileRedisStatefulSet(cr *argoprojv1a1.ArgoCD) err
 			Ports: []corev1.ContainerPort{{
 				ContainerPort: common.ArgoCDDefaultRedisPort,
 				Name:          "redis",
+				Protocol:      corev1.ProtocolTCP,
 			}},
 			ReadinessProbe: &corev1.Probe{
 				ProbeHandler: corev1.ProbeHandler{
@@ -255,6 +256,7 @@ func (r *ReconcileArgoCD) reconcileRedisStatefulSet(cr *argoprojv1a1.ArgoCD) err
 			Ports: []corev1.ContainerPort{{
 				ContainerPort: common.ArgoCDDefaultRedisSentinelPort,
 				Name:          "sentinel",
+				Protocol:      corev1.ProtocolTCP,
 			}},
 			ReadinessProbe: &corev1.Probe{
 				ProbeHandler: corev1.ProbeHandler{
@@ -467,6 +469,7 @@ func (r *ReconcileArgoCD) reconcileApplicationControllerStatefulSet(cr *argoproj
 		Ports: []corev1.ContainerPort{
 			{
 				ContainerPort: 8082,
+				Protocol:      corev1.ProtocolTCP,
 			},
 		},
 		ReadinessProbe: &corev1.Probe{
@@ -500,6 +503,9 @@ func (r *ReconcileArgoCD) reconcileApplicationControllerStatefulSet(cr *argoproj
 			},
 		},
 	}}
+
+	podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, cr.Spec.Controller.VolumeMounts...)
+
 	AddSeccompProfileForOpenShift(r.Client, podSpec)
 	podSpec.ServiceAccountName = nameWithSuffix("argocd-application-controller", cr)
 	podSpec.Volumes = []corev1.Volume{
@@ -522,6 +528,8 @@ func (r *ReconcileArgoCD) reconcileApplicationControllerStatefulSet(cr *argoproj
 			},
 		},
 	}
+
+	podSpec.Volumes = append(podSpec.Volumes, cr.Spec.Controller.Volumes...)
 
 	ss.Spec.Template.Spec.Affinity = &corev1.Affinity{
 		PodAntiAffinity: &corev1.PodAntiAffinity{

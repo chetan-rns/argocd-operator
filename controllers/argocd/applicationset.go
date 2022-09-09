@@ -216,10 +216,12 @@ func applicationSetContainer(cr *argoprojv1a1.ArgoCD) corev1.Container {
 			{
 				ContainerPort: 7000,
 				Name:          "webhook",
+				Protocol:      corev1.ProtocolTCP,
 			},
 			{
 				ContainerPort: 8000,
 				Name:          "metrics",
+				Protocol:      corev1.ProtocolTCP,
 			},
 		},
 		SecurityContext: &corev1.SecurityContext{

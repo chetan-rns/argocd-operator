@@ -584,6 +584,9 @@ func getRedisServerAddress(cr *argoprojv1a1.ArgoCD) string {
 	if cr.Spec.HA.Enabled {
 		return getRedisHAProxyAddress(cr)
 	}
+	if os.Getenv("DISABLE_FULLY_QUALIFIED_SERVICE") == "true" {
+		return fmt.Sprintf("%s:%d", nameWithSuffix(common.ArgoCDDefaultRedisSuffix, cr), common.ArgoCDDefaultRedisPort)
+	}
 	return fqdnServiceRef(common.ArgoCDDefaultRedisSuffix, common.ArgoCDDefaultRedisPort, cr)
 }
 
@@ -766,11 +769,6 @@ func (r *ReconcileArgoCD) reconcileResources(cr *argoprojv1a1.ArgoCD) error {
 		return err
 	}
 
-	log.Info("reconciling autoscalers")
-	if err := r.reconcileAutoscalers(cr); err != nil {
-		return err
-	}
-
 	log.Info("reconciling ingresses")
 	if err := r.reconcileIngresses(cr); err != nil {
 		return err
@@ -779,6 +777,13 @@ func (r *ReconcileArgoCD) reconcileResources(cr *argoprojv1a1.ArgoCD) error {
 	if IsRouteAPIAvailable() {
 		log.Info("reconciling routes")
 		if err := r.reconcileRoutes(cr); err != nil {
+			return err
+		}
+	}
+
+	if os.Getenv("DISABLE_HPA") != "true" {
+		log.Info("reconciling autoscalers")
+		if err := r.reconcileAutoscalers(cr); err != nil {
 			return err
 		}
 	}

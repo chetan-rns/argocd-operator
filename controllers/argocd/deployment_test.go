@@ -869,8 +869,8 @@ func TestReconcileArgoCD_reconcileServerDeployment(t *testing.T) {
 					"text",
 				},
 				Ports: []corev1.ContainerPort{
-					{ContainerPort: 8080},
-					{ContainerPort: 8083},
+					{ContainerPort: 8080, Protocol: corev1.ProtocolTCP},
+					{ContainerPort: 8083, Protocol: corev1.ProtocolTCP},
 				},
 				LivenessProbe: &corev1.Probe{
 					ProbeHandler: corev1.ProbeHandler{
@@ -1083,8 +1083,8 @@ func TestReconcileArgoCD_reconcileServerDeploymentWithInsecure(t *testing.T) {
 					"text",
 				},
 				Ports: []corev1.ContainerPort{
-					{ContainerPort: 8080},
-					{ContainerPort: 8083},
+					{ContainerPort: 8080, Protocol: corev1.ProtocolTCP},
+					{ContainerPort: 8083, Protocol: corev1.ProtocolTCP},
 				},
 				LivenessProbe: &corev1.Probe{
 					ProbeHandler: corev1.ProbeHandler{
@@ -1168,8 +1168,8 @@ func TestReconcileArgoCD_reconcileServerDeploymentChangedToInsecure(t *testing.T
 					"text",
 				},
 				Ports: []corev1.ContainerPort{
-					{ContainerPort: 8080},
-					{ContainerPort: 8083},
+					{ContainerPort: 8080, Protocol: corev1.ProtocolTCP},
+					{ContainerPort: 8083, Protocol: corev1.ProtocolTCP},
 				},
 				LivenessProbe: &corev1.Probe{
 					ProbeHandler: corev1.ProbeHandler{
